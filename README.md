@@ -58,4 +58,4 @@ No problems occured yet, let me know!
 - I've left some comments, feel free to edit the code so it fits your need
 
 ## Licence
-None
+MIT License
