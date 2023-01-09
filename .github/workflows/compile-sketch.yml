@@ -1,0 +1,24 @@
+name: Compile Sketch
+
+# The workflow will run on every push and pull request to the repository
+on:
+  - push
+  - pull_request
+
+jobs:
+  compile-sketch:
+    runs-on: ubuntu-latest
+
+    steps:
+      # This step makes the contents of the repository available to the workflow
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Install arduino-cli
+        run: curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh && /home/runner/work/hue-controller/hue-controller/bin/arduino-cli config init --additional-urls http://arduino.esp8266.com/stable/package_esp8266com_index.json
+            
+      - name: Install ESP8266 and ArduinoJson
+        run: /home/runner/work/hue-controller/hue-controller/bin/arduino-cli core update-index && /home/runner/work/hue-controller/hue-controller/bin/arduino-cli core install esp8266:esp8266 && /home/runner/work/hue-controller/hue-controller/bin/arduino-cli lib install ArduinoJson
+        
+      - name: Compile sketch
+        run: /home/runner/work/hue-controller/hue-controller/bin/arduino-cli compile -b esp8266:esp8266:nodemcuv2 ./
