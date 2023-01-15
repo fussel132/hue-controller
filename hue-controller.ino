@@ -2,7 +2,7 @@
 // Author: fussel132
 // Date: 2022-11-19
 // File: hue-controller.ino
-// Version: 1.0.2
+// Version: 1.1.0
 // Description: This is a simple ESP8266 based controller for Philips Hue Lights
 //              It connects to the WiFi and sends HTTP/PUT requests to the Philips Hue Bridge
 //              The lamps will be triggered if pin D6 will be set high by a relais or whatever
@@ -28,10 +28,13 @@ const char *hostname = "hue-controller";
 const String bridgeIP = "hue.bridge.ip.address";    // Set before Upload!
 const String authKey = "huebridge authkey";         // Set before Upload!
 const int groupID = 1;                              // Set before Upload!
-const int defaultTransitTime = 15; // Used if animation is turned off, otherwise for the first scene
-const int animatedTransitTime = 30;
+// Philips Hue Transitiontime is 1/10s while the Arduino Delay is 1/1000s. Here the Hue times are used
+const int defaultTransitTime = 10; // Used for power off and if animation is turned off (otherwise using the below values)
+const int firstSceneTransitTime = 2;
+const int secondSceneTransitTime = 40;
 const String startupScene1 = "sceneid1";            // Set before Upload!
 const String startupScene2 = "sceneid2";            // Set before Upload!
+const bool serialMode = false; // If true, the ESP will not use the relais input but the serial input "ON" or "OFF" sent over serial monitor (with NO line ending!)
 
 unsigned long previousMillis = 0;
 const long interval = 500;
@@ -41,6 +44,7 @@ bool buttonPressed = false;
 bool ledOn = false;
 bool linkLedOn = false;
 int elapsed = 0;
+String input = "";
 
 WiFiClient client;
 DynamicJsonDocument doc(1024);
@@ -67,13 +71,13 @@ String httpPUT(String url, String body)
   http.addHeader("Content-Type", "application/json");
   int httpCode = http.PUT(body);
   String payload = "{}";
-  Serial.println("Response code: " + String(httpCode));
+  Serial.print("Response (" + String(httpCode) + "): ");
   if (httpCode > 0)
   {
     payload = http.getString();
   }
   http.end();
-  Serial.println("Response: " + payload);
+  Serial.println(payload);
   return payload;
 }
 
@@ -99,6 +103,17 @@ void blinkLed(uint8_t led, long interval)
     }
   }
   delay(150); // Without this delay the ESP will crash after ~3s because who knows
+}
+
+void blinkLedFor(uint8_t led, long interval, long duration)
+{
+  long milli = millis();
+  long elapsed = millis();
+  while ((milli - elapsed) < duration)
+  {
+    blinkLed(led, interval);
+    milli = millis();
+  }
 }
 
 void setup()
@@ -141,7 +156,7 @@ void loop()
   {
     blinkLed(LED_LINK, interval);
   }
-  else
+  else if (serialMode ? Serial.available() > 0 : 1 == 1)
   {
     // Turn Link LED On if it is off
     if (!linkLedOn)
@@ -150,8 +165,13 @@ void loop()
       digitalWrite(LED_LINK, HIGH);
     }
 
+    if (serialMode)
+    {
+      input = Serial.readString();
+    }
+
     // When the Relais is switched on, turn on the motion LED and Philips Hue Lights On / Off while respecting the animation flag
-    if (digitalRead(RELAIS) == HIGH && !motion)
+    if (serialMode ? input.equals("ON") : (digitalRead(RELAIS) == HIGH && !motion))
     {
       motion = true;
       Serial.print("Motion detected. Turning on lights with");
@@ -160,38 +180,26 @@ void loop()
       // From where will the hue system transit when turning on? From black to scene1 or from the last "on" setting (bright flash??)
       if (animation)
       {
-        setGroupScene(defaultTransitTime, startupScene1);
-        // Delay? Nope
-        setGroupScene(animatedTransitTime, startupScene2);
+        setGroupScene(firstSceneTransitTime, startupScene1);
+        delay(100); // Just for safety :)
+        // blinkLedFor(LED_MOTION, interval, firstSceneTransitTime * 100); // Looks smoother without
+        setGroupScene(secondSceneTransitTime, startupScene2);
+        blinkLedFor(LED_MOTION, interval, secondSceneTransitTime * 100);
       }
       else
       {
         setGroupScene(defaultTransitTime, startupScene2);
-      }
-      // Blink LED for 5 seconds
-      long milli = millis();
-      long elapsed = millis();
-      while ((milli - elapsed) < (animation ? 5000 : 2000))
-      {
-        blinkLed(LED_MOTION, interval);
-        milli = millis();
+        blinkLedFor(LED_MOTION, interval, defaultTransitTime * 100);
       }
       digitalWrite(LED_MOTION, HIGH);
     }
-    else if (digitalRead(RELAIS) == LOW && motion)
+    else if (serialMode ? input.equals("OFF") : (digitalRead(RELAIS) == LOW && motion))
     {
       motion = false;
       Serial.println("Motion stopped. Turning off lights.");
       // Switch off lights
       powerOff(defaultTransitTime);
-      // Blink LED for 2 seconds
-      long milli = millis();
-      long elapsed = millis();
-      while ((milli - elapsed) < 2000)
-      {
-        blinkLed(LED_MOTION, interval);
-        milli = millis();
-      }
+      blinkLedFor(LED_MOTION, interval, defaultTransitTime * 100);
       digitalWrite(LED_MOTION, LOW);
     }
   }
