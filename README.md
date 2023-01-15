@@ -62,7 +62,7 @@ No problems occured yet, let me know!
 
 ## Changelog
 - v1.0.2: Initial release (10.01.2023)
-- v1.1.0: See [Pull Request #1](https://github.com/fussel132/hue-controller/pull/1) for details.
+- v1.1.0: See [Pull Request #1](https://github.com/fussel132/hue-controller/pull/1) for details (15.01.2023)
 
 ## Licence
 MIT License
