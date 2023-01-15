@@ -55,7 +55,7 @@ No problems occured yet, let me know!
 
 ## Custom behaviour
 - The pins for LEDs and buttons can be changed easily in the code
-- If you want to change the default state of the animation functionality, change line 38 to `bool animation = false;`. Note that the red LED will light up constantly from there.
+- If you want to change the default state of the animation functionality, change line 42 to `bool animation = false;`. Note that the red LED will light up constantly from there.
 - The transition time (in ms) between states can be customized in line 32, 33 and 34
 - You can enable a "serial mode" in line 37, this will allow you to turn the lights on and off by sending "ON" or "OFF" (instead of setting the Relais-Pin high) via the serial monitor (no line ending!)
 - I've left some comments, feel free to edit the code so it fits your need
