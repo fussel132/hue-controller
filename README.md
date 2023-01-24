@@ -26,6 +26,17 @@ Hook everything up like this:
 
 <img src="schematics/hue-controller.png" alt="drawing" width="400"/>
 
+## Dependencies/Arduino Setup
+- [Arduino IDE](https://www.arduino.cc/en/software)
+- [ESP8266 Core for Arduino]()
+- [ArduinoJson](https://arduinojson.org/)
+- [Philips Hue Library]()
+- [WiFiManager]()
+- [ArduinoOTA]()
+- [ArduinoWebsockets]()
+
+[WORK IN PROGRESS!! MAY CHANGE!] <<TODO
+
 ## Setup
 1. Wire everything up as shown in the schematic
 2. Create two new scenes in the Philips Hue App, one for the first and one for the second stage of power up
