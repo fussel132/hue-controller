@@ -1,3 +1,5 @@
+// ALERT: NOT TESTED. MAY NOT WORK PROPERLY! IF SO, A FIX WILL BE SUPLLIED AS SOON AS POSSIBLE!
+
 // Project: hue-controller
 // Author: fussel132
 // Date: 2022-11-19
@@ -22,11 +24,12 @@
 #define BUTTON D1
 #define RELAIS D6
 
-const char *ssid = "SSID";                          // Set before Upload!
-const char *password = "Password";                  // Set before Upload!
+const char *ssid = "<SSID>";                        // Set before Upload!
+const char *password = "<WiFi-PSK>";                // Set before Upload!
 const char *hostname = "hue-controller";
-const String bridgeIP = "hue.bridge.ip.address";    // Set before Upload!
-const String authKey = "huebridge authkey";         // Set before Upload!
+const String bridgeIP = "<hueBridgeIP>";            // Set before Upload!
+const String authKey = "<huebridge-authkey>";       // Set before Upload!
+const String webLogServer = "<webloggerIP>";        // Set before Upload!
 const int groupID = 1;                              // Set before Upload!
 // Philips Hue Transitiontime is 1/10s while the Arduino Delay is 1/1000s. Here the Hue times are used
 const int defaultTransitTime = 10; // Used for power off and if animation is turned off (otherwise using the below values)
@@ -79,6 +82,29 @@ String httpPUT(String url, String body)
   http.end();
   Serial.println(payload);
   return payload;
+}
+
+String httpPOST(String url, String body)
+{
+  HTTPClient http;
+  http.begin(client, url);
+  http.addHeader("Content-Type", "application/json");
+  int httpCode = http.POST(body);
+  String payload = "{}";
+  Serial.print("Response (" + String(httpCode) + "): ");
+  if (httpCode > 0)
+  {
+    payload = http.getString();
+  }
+  http.end();
+  Serial.println(payload);
+  return payload;
+}
+
+void logToServer(String message)
+{
+  String body = "{\"msg\":\"" + message + "\"}";
+  httpPOST("http://" + webLogServer + "/api/log", body);
 }
 
 void blinkLed(uint8_t led, long interval)
@@ -141,10 +167,10 @@ void setup()
   {
     digitalWrite(LED_RED, HIGH);
   }
-  Serial.print("Connected to " + String(ssid) + ", IP address: ");
-  Serial.print(WiFi.localIP());
-  Serial.print(", Hostname: ");
-  Serial.println(WiFi.getHostname());
+  String bootmsg = "Connected to " + String(ssid) + ", IP address: " + WiFi.localIP().toString() + ", Hostname: " + WiFi.getHostname();
+  Serial.println(bootmsg);
+  logToServer("Event detected: RESTART. Reason: Hardware reset.");
+  logToServer(bootmsg);
   WiFi.setAutoReconnect(true);
   WiFi.persistent(true);
 }
@@ -176,6 +202,7 @@ void loop()
       motion = true;
       Serial.print("Motion detected. Turning on lights with");
       Serial.println(animation ? " animation." : "out animation.");
+      logToServer("Event detected: Motion. Turning on lights with" + String(animation ? " animation." : "out animation."));
       // Switch on lights
       // From where will the hue system transit when turning on? From black to scene1 or from the last "on" setting (bright flash??)
       if (animation)
@@ -197,6 +224,7 @@ void loop()
     {
       motion = false;
       Serial.println("Motion stopped. Turning off lights.");
+      logToServer("Event detected: Motion stopped. Turning off lights.");
       // Switch off lights
       powerOff(defaultTransitTime);
       blinkLedFor(LED_MOTION, interval, defaultTransitTime * 100);
@@ -213,12 +241,14 @@ void loop()
       animation = false;
       digitalWrite(LED_RED, HIGH);
       Serial.println("Animation disabled.");
+      logToServer("Event detected: Button pressed. Animation disabled.");
     }
     else
     {
       animation = true;
       digitalWrite(LED_RED, LOW);
       Serial.println("Animation enabled.");
+      logToServer("Event detected: Button pressed. Animation enabled.");
     }
   }
   else if (digitalRead(BUTTON) == LOW && buttonPressed)
