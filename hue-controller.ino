@@ -42,7 +42,7 @@ To prevent false signals, adjust these delays (in ms).
 const int powerOffDelay = 1000; // Turn lamps off only if the input is still low after this delay
 const int buttonDelay = 200;    // Ignore button presses if the button is pressed shorter than this delay
 // Default behavior
-bool animation = true;         // Change this to false if you wish animations to be disabled upon boot
+bool animation = true; // Change this to false if you wish animations to be disabled upon boot
 
 // Variables needed to run, do not change
 unsigned long previousMillis = 0;
@@ -83,13 +83,11 @@ String httpPUT(String url, String body)
   http.addHeader("Content-Type", "application/json");
   int httpCode = http.PUT(body);
   String payload = "{}";
-  Serial.print("Response (" + String(httpCode) + "): ");
   if (httpCode > 0)
   {
     payload = http.getString();
   }
   http.end();
-  Serial.println(payload);
   return payload;
 }
 
@@ -136,10 +134,8 @@ void setup()
   pinMode(LED_RED, OUTPUT);
   pinMode(BUTTON, INPUT);
   pinMode(RELAIS, INPUT);
-  Serial.begin(115200);
   WiFi.begin(ssid, password);
   WiFi.setHostname(hostname);
-  Serial.println("Connecting to " + String(ssid));
   while (WiFi.status() != WL_CONNECTED)
   {
     blinkLed(LED_LINK, interval);
@@ -153,7 +149,6 @@ void setup()
   {
     digitalWrite(LED_RED, HIGH);
   }
-  Serial.println("Connected to " + String(ssid) + ", IP address: " + WiFi.localIP().toString() + ", Hostname: " + WiFi.getHostname());
   WiFi.setAutoReconnect(true);
   WiFi.persistent(true);
 }
@@ -182,14 +177,13 @@ void loop()
         unsigned long motionDetectedAgain = millis();
         if (lostMotionTime + powerOffDelay > motionDetectedAgain)
         {
-          Serial.println("Preventing false power off: Lost signal for " + String(motionDetectedAgain - lostMotionTime) + "ms.");
+          // False trigger, ignoring...
         }
         lostMotion = false;
       }
       if (!motion)
       {
         motion = true;
-        Serial.println("Event detected: Motion. Turning on lights with" + String(animation ? " animation." : "out animation."));
         // Switch on lights
         if (animation)
         {
@@ -204,7 +198,6 @@ void loop()
           blinkLedFor(LED_MOTION, interval, defaultTransitTime * 100);
         }
         digitalWrite(LED_MOTION, HIGH);
-        Serial.println("Success: Lights are on now.");
       }
     }
     else if (digitalRead(RELAIS) == LOW)
@@ -223,8 +216,6 @@ void loop()
         powerOff(defaultTransitTime);
         blinkLedFor(LED_MOTION, interval, defaultTransitTime * 100);
         digitalWrite(LED_MOTION, LOW);
-        // Logging
-        Serial.println("Motion stopped. Turning off lights.");
       }
     }
   }
@@ -244,13 +235,11 @@ void loop()
       {
         animation = false;
         digitalWrite(LED_RED, HIGH);
-        Serial.println("Animation disabled.");
       }
       else
       {
         animation = true;
         digitalWrite(LED_RED, LOW);
-        Serial.println("Animation enabled.");
       }
       modeChanged = true;
     }
@@ -261,8 +250,7 @@ void loop()
     buttonPressed = false;
     if (!modeChanged)
     {
-      // Button was pressed for less than buttonDelay
-      Serial.println("Button pressed for less than " + String(buttonDelay) + "ms. Not changing mode");
+      // Button was pressed for less than buttonDelay (false trigger)
     }
     modeChanged = false;
   }
