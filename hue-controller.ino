@@ -1,10 +1,8 @@
-// ALERT: NOT TESTED. MAY NOT WORK PROPERLY! IF SO, A FIX WILL BE SUPLLIED AS SOON AS POSSIBLE!
-
 // Project: hue-controller
 // Author: fussel132
 // Date: 2022-11-19
 // File: hue-controller.ino
-// Version: 1.1.0
+// Version: 1.2.0
 // Description: This is a simple ESP8266 based controller for Philips Hue Lights
 //              It connects to the WiFi and sends HTTP/PUT requests to the Philips Hue Bridge
 //              The lamps will be triggered if pin D6 will be set high by a relais or whatever
