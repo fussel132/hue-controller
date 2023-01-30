@@ -1,5 +1,5 @@
 # hue-controller
-<a href="https://github.com/fussel132/hue-controller/actions"><img src="https://github.com/fussel132/hue-controller/actions/workflows/compile-sketch.yml/badge.svg?branch=development" alt="Compile Sketch Workflow Badge"></a>
+<a href="https://github.com/fussel132/hue-controller/actions"><img src="https://github.com/fussel132/hue-controller/actions/workflows/compile-sketch.yml/badge.svg?branch=logging" alt="Compile Sketch Workflow Badge"></a>
 
 ## Logging-Branch! Designed to work with [WebLogger](https://github.com/fussel132/weblogger). Additional notes:
  > For this you'll need to setup a [WebLogger](https://github.com/fussel132/weblogger) instance. The ESP will log events via  POST requests to this server and you can view activity in your browser.
