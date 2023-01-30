@@ -2,7 +2,8 @@
 <a href="https://github.com/fussel132/hue-controller/actions"><img src="https://github.com/fussel132/hue-controller/actions/workflows/compile-sketch.yml/badge.svg?branch=logging" alt="Compile Sketch Workflow Badge"></a>
 
 ## Logging-Branch! Designed to work with [WebLogger](https://github.com/fussel132/weblogger). Additional notes:
- > For this you'll need to setup a [WebLogger](https://github.com/fussel132/weblogger) instance. The ESP will log events via  POST requests to this server and you can view activity in your browser.
+ > For this you'll need to setup a [WebLogger](https://github.com/fussel132/weblogger) instance. The ESP will log events via POST requests to this server and you can view activity in your browser.
+ Logging to serial is also still implemented.
 
 ## Idea
 The idea is that as soon as an input is registered on the NodeMCU (caused by a motion sensor or whatever), it will tell the Philips Hue Bridge to turn on the lights in a specified group (room). To do so, it requires two scenes to be created in the Hue App which will be used to turn on the lights. Why? Because you can change color, brightness and beautiful color flows on power up without reflashing the NodeMCU, you can to that comftably in the Hue App! 
@@ -65,12 +66,13 @@ No problems occured yet, let me know!
 - The pins for LEDs and buttons can be changed easily in the code
 - If you want to change the default state of the animation functionality, change line 42 to `bool animation = false;`. Note that the red LED will light up constantly from there.
 - The transition time (in ms) between states can be customized in line 32, 33 and 34
-- You can enable a "serial mode" in line 37, this will allow you to turn the lights on and off by sending "ON" or "OFF" (instead of setting the Relais-Pin high) via the serial monitor (no line ending!)
+- Delays to prevent false triggers can be changed in line 42 and 43
 - I've left some comments, feel free to edit the code so it fits your need
 
 ## Changelog
 - v1.0.2: Initial release (10.01.2023)
 - v1.1.0: See [Release Notes](https://github.com/fussel132/hue-controller/releases/v1.1.0) for details (15.01.2023)
+- v1.2.0: See [Release Notes](https://github.com/fussel132/hue-controller/releases/v1.2.0) for details (30.01.2023)
 
 ## Licence
 MIT License
