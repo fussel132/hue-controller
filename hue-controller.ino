@@ -24,28 +24,41 @@
 #define BUTTON D1
 #define RELAIS D6
 
-const char *ssid = "<SSID>";                        // Set before Upload!
-const char *password = "<WiFi-PSK>";                // Set before Upload!
+const char *ssid = "<SSID>";         // Set before Upload!
+const char *password = "<WiFi-PSK>"; // Set before Upload!
 const char *hostname = "hue-controller";
-const String bridgeIP = "<hueBridgeIP>";            // Set before Upload!
-const String authKey = "<huebridge-authkey>";       // Set before Upload!
-const String webLogServer = "<webloggerIP>";        // Set before Upload!
-const int groupID = 1;                              // Set before Upload!
+const String bridgeIP = "<hueBridgeIP>";      // Set before Upload!
+const String authKey = "<huebridge-authkey>"; // Set before Upload!
+const String webLogServer = "<webloggerIP>";  // Set before Upload!
+const int groupID = 1;                        // Set before Upload!
 // Philips Hue Transitiontime is 1/10s while the Arduino Delay is 1/1000s. Here the Hue times are used
 const int defaultTransitTime = 10; // Used for power off and if animation is turned off (otherwise using the below values)
 const int firstSceneTransitTime = 2;
 const int secondSceneTransitTime = 40;
-const String startupScene1 = "sceneid1";            // Set before Upload!
-const String startupScene2 = "sceneid2";            // Set before Upload!
+const String startupScene1 = "sceneid1"; // Set before Upload!
+const String startupScene2 = "sceneid2"; // Set before Upload!
+/*
+In theory, pull down resistors should prevent false signals.
+But if installed for example in an electrical box, interference signals might be strong enough to trigger certain events.
+To prevent false signals, adjust these delays (in ms).
+*/
+const int powerOffDelay = 1000; // Turn lamps off only if the input is still low after this delay
+const int buttonDelay = 200;    // Ignore button presses if the button is pressed shorter than this delay
+// Default behavior
 const bool serialMode = false; // If true, the ESP will not use the relais input but the serial input "ON" or "OFF" sent over serial monitor (with NO line ending!)
+bool animation = true;         // Change this to false if you wish animations to be disabled upon boot
 
+// Variables needed to run, do not change
 unsigned long previousMillis = 0;
+unsigned long beginButtonPress;
+unsigned long lostMotionTime;
 const long interval = 500;
 bool motion = false;
-bool animation = true;                              // Change this to false if you wish animations to be disabled upon boot
 bool buttonPressed = false;
 bool ledOn = false;
 bool linkLedOn = false;
+bool modeChanged = false;
+bool lostMotion = false;
 int elapsed = 0;
 String input = "";
 
@@ -173,6 +186,7 @@ void setup()
   logToServer(bootmsg);
   WiFi.setAutoReconnect(true);
   WiFi.persistent(true);
+  logToServer("Setup finished.");
 }
 
 void loop()
@@ -197,62 +211,99 @@ void loop()
     }
 
     // When the Relais is switched on, turn on the motion LED and Philips Hue Lights On / Off while respecting the animation flag
-    if (serialMode ? input.equals("ON") : (digitalRead(RELAIS) == HIGH && !motion))
+    if (serialMode ? input.equals("ON") : (digitalRead(RELAIS) == HIGH))
     {
-      motion = true;
-      Serial.print("Motion detected. Turning on lights with");
-      Serial.println(animation ? " animation." : "out animation.");
-      logToServer("Event detected: Motion. Turning on lights with" + String(animation ? " animation." : "out animation."));
-      // Switch on lights
-      // From where will the hue system transit when turning on? From black to scene1 or from the last "on" setting (bright flash??)
-      if (animation)
+      if (lostMotion)
       {
-        setGroupScene(firstSceneTransitTime, startupScene1);
-        delay(100); // Just for safety :)
-        // blinkLedFor(LED_MOTION, interval, firstSceneTransitTime * 100); // Looks smoother without
-        setGroupScene(secondSceneTransitTime, startupScene2);
-        blinkLedFor(LED_MOTION, interval, secondSceneTransitTime * 100);
+        unsigned long motionDetectedAgain = millis();
+        if (lostMotionTime + powerOffDelay > motionDetectedAgain)
+        {
+          logToServer("Preventing false power off: Lost signal for " + String(motionDetectedAgain - lostMotionTime) + "ms.");
+        }
+        lostMotion = false;
       }
-      else
+      if (!motion)
       {
-        setGroupScene(defaultTransitTime, startupScene2);
-        blinkLedFor(LED_MOTION, interval, defaultTransitTime * 100);
+        motion = true;
+        logToServer("Event detected: Motion. Turning on lights with" + String(animation ? " animation." : "out animation."));
+        // Switch on lights
+        if (animation)
+        {
+          setGroupScene(firstSceneTransitTime, startupScene1);
+          delay(100); // Just for safety :)
+          setGroupScene(secondSceneTransitTime, startupScene2);
+          blinkLedFor(LED_MOTION, interval, secondSceneTransitTime * 100);
+        }
+        else
+        {
+          setGroupScene(defaultTransitTime, startupScene2);
+          blinkLedFor(LED_MOTION, interval, defaultTransitTime * 100);
+        }
+        digitalWrite(LED_MOTION, HIGH);
+        logToServer("Success: Lights are on now.");
       }
-      digitalWrite(LED_MOTION, HIGH);
     }
-    else if (serialMode ? input.equals("OFF") : (digitalRead(RELAIS) == LOW && motion))
+    else if (serialMode ? input.equals("OFF") : (digitalRead(RELAIS) == LOW)) // serialMode won't work here
     {
-      motion = false;
-      Serial.println("Motion stopped. Turning off lights.");
-      logToServer("Event detected: Motion stopped. Turning off lights.");
-      // Switch off lights
-      powerOff(defaultTransitTime);
-      blinkLedFor(LED_MOTION, interval, defaultTransitTime * 100);
-      digitalWrite(LED_MOTION, LOW);
+      if (!lostMotion)
+      {
+        // Called once after motion stopped to save the time
+        lostMotion = true;
+        lostMotionTime = millis();
+      }
+      // Called every loop
+      if (lostMotionTime + powerOffDelay < millis() && motion)
+      {
+        motion = false;
+        // Switch off lights
+        powerOff(defaultTransitTime);
+        blinkLedFor(LED_MOTION, interval, defaultTransitTime * 100);
+        digitalWrite(LED_MOTION, LOW);
+        // Logging
+        Serial.println("Motion stopped. Turning off lights.");
+        logToServer("Event detected: Motion stopped. Turning off lights.");
+      }
     }
   }
 
-  // Check if button is pressed and detect whether animation should be played or not
-  if (digitalRead(BUTTON) == HIGH && !buttonPressed)
+  if (digitalRead(BUTTON) == HIGH)
   {
-    buttonPressed = true;
-    if (animation)
+    if (!buttonPressed)
     {
-      animation = false;
-      digitalWrite(LED_RED, HIGH);
-      Serial.println("Animation disabled.");
-      logToServer("Event detected: Button pressed. Animation disabled.");
+      // Called once after button press to save the time
+      buttonPressed = true;
+      beginButtonPress = millis();
     }
-    else
+    // Called every loop
+    if (beginButtonPress + buttonDelay < millis() && !modeChanged)
     {
-      animation = true;
-      digitalWrite(LED_RED, LOW);
-      Serial.println("Animation enabled.");
-      logToServer("Event detected: Button pressed. Animation enabled.");
+      if (animation)
+      {
+        animation = false;
+        digitalWrite(LED_RED, HIGH);
+        Serial.println("Animation disabled.");
+        logToServer("Event detected: Button pressed. Animation disabled.");
+      }
+      else
+      {
+        animation = true;
+        digitalWrite(LED_RED, LOW);
+        Serial.println("Animation enabled.");
+        logToServer("Event detected: Button pressed. Animation enabled.");
+      }
+      modeChanged = true;
     }
   }
   else if (digitalRead(BUTTON) == LOW && buttonPressed)
   {
+    // Called once after button release
     buttonPressed = false;
+    if (!modeChanged)
+    {
+      // Button was pressed for less than buttonDelay
+      Serial.println("Button pressed for less than " + String(buttonDelay) + "ms. Not changing mode");
+      logToServer("Preventing false trigger: Button pressed for less than " + String(buttonDelay) + "ms (" + String(millis() - beginButtonPress) + "ms). Not changing mode");
+    }
+    modeChanged = false;
   }
 }
