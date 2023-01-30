@@ -1,8 +1,8 @@
 # hue-controller
 <a href="https://github.com/fussel132/hue-controller/actions"><img src="https://github.com/fussel132/hue-controller/actions/workflows/compile-sketch.yml/badge.svg?branch=development" alt="Compile Sketch Workflow Badge"></a>
 
-## Development-Branch! Designed to work with [WebLogger](https://github.com/fussel132/weblogger). Additional notes:
-> This is used for development. It is only meant for troubleshooting purposes. For a stable and mor lightweight version, please refer to the [main branch](https://github.com/fussel132/hue-controller/tree/main).
+## Logging-Branch! Designed to work with [WebLogger](https://github.com/fussel132/weblogger). Additional notes:
+ > For this you'll need to setup a [WebLogger](https://github.com/fussel132/weblogger) instance. The ESP will log events via  POST requests to this server and you can view activity in your browser.
 
 ## Idea
 The idea is that as soon as an input is registered on the NodeMCU (caused by a motion sensor or whatever), it will tell the Philips Hue Bridge to turn on the lights in a specified group (room). To do so, it requires two scenes to be created in the Hue App which will be used to turn on the lights. Why? Because you can change color, brightness and beautiful color flows on power up without reflashing the NodeMCU, you can to that comftably in the Hue App! 
