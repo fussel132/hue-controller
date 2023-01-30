@@ -1,8 +1,8 @@
 # hue-controller
-<a href="https://github.com/fussel132/hue-controller/actions"><img src="https://github.com/fussel132/hue-controller/actions/workflows/compile-sketch.yml/badge.svg?branch=main" alt="Compile Sketch Workflow Badge"></a>
+<a href="https://github.com/fussel132/hue-controller/actions"><img src="https://github.com/fussel132/hue-controller/actions/workflows/compile-sketch.yml/badge.svg?branch=development" alt="Compile Sketch Workflow Badge"></a>
 
-## Logging-Branch! Designed to work with [WebLogger](https://github.com/fussel132/weblogger). Additional notes:
-> For this you'll need to setup a [WebLogger](https://github.com/fussel132/weblogger) instance. The ESP will log events via  POST requests to this server and you can view activity in your browser.
+## Development-Branch! Designed to work with [WebLogger](https://github.com/fussel132/weblogger). Additional notes:
+> This is used for development. It is only meant for troubleshooting purposes. For a stable and mor lightweight version, please refer to the [main branch](https://github.com/fussel132/hue-controller/tree/main).
 
 ## Idea
 The idea is that as soon as an input is registered on the NodeMCU (caused by a motion sensor or whatever), it will tell the Philips Hue Bridge to turn on the lights in a specified group (room). To do so, it requires two scenes to be created in the Hue App which will be used to turn on the lights. Why? Because you can change color, brightness and beautiful color flows on power up without reflashing the NodeMCU, you can to that comftably in the Hue App! 
@@ -26,16 +26,10 @@ Hook everything up like this:
 
 <img src="schematics/hue-controller.png" alt="drawing" width="400"/>
 
-## Dependencies/Arduino Setup
+## Dependencies
 - [Arduino IDE](https://www.arduino.cc/en/software)
-- [ESP8266 Core for Arduino]()
-- [ArduinoJson](https://arduinojson.org/)
-- [Philips Hue Library]()
-- [WiFiManager]()
-- [ArduinoOTA]()
-- [ArduinoWebsockets]()
-
-[WORK IN PROGRESS!! MAY CHANGE!] <<TODO
+- [ESP8266 Core for Arduino](https://randomnerdtutorials.com/how-to-install-esp8266-board-arduino-ide/)
+- ArduinoJson
 
 ## Setup
 1. Wire everything up as shown in the schematic
