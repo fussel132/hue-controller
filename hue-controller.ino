@@ -45,8 +45,7 @@ To prevent false signals, adjust these delays (in ms).
 const int powerOffDelay = 1000; // Turn lamps off only if the input is still low after this delay
 const int buttonDelay = 200;    // Ignore button presses if the button is pressed shorter than this delay
 // Default behavior
-const bool serialMode = false; // If true, the ESP will not use the relais input but the serial input "ON" or "OFF" sent over serial monitor (with NO line ending!)
-bool animation = true;         // Change this to false if you wish animations to be disabled upon boot
+bool animation = true; // Change this to false if you wish animations to be disabled upon boot
 
 // Variables needed to run, do not change
 unsigned long previousMillis = 0;
@@ -196,7 +195,7 @@ void loop()
   {
     blinkLed(LED_LINK, interval);
   }
-  else if (serialMode ? Serial.available() > 0 : 1 == 1)
+  else
   {
     // Turn Link LED On if it is off
     if (!linkLedOn)
@@ -205,13 +204,8 @@ void loop()
       digitalWrite(LED_LINK, HIGH);
     }
 
-    if (serialMode)
-    {
-      input = Serial.readString();
-    }
-
     // When the Relais is switched on, turn on the motion LED and Philips Hue Lights On / Off while respecting the animation flag
-    if (serialMode ? input.equals("ON") : (digitalRead(RELAIS) == HIGH))
+    if (digitalRead(RELAIS) == HIGH)
     {
       if (lostMotion)
       {
@@ -243,7 +237,7 @@ void loop()
         logToServer("Success: Lights are on now.");
       }
     }
-    else if (serialMode ? input.equals("OFF") : (digitalRead(RELAIS) == LOW)) // serialMode won't work here
+    else if (digitalRead(RELAIS) == LOW)
     {
       if (!lostMotion)
       {
